@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - SECRET_KEY=attend_csi_production_secret_key_2026
+      - DATABASE_URL=sqlite:///./attend_csi.db
+      - TOKEN_ROTATION_INTERVAL_SECONDS=20
+    volumes:
+      - ./backend/data:/app/data
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: always
