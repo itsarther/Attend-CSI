@@ -5,6 +5,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -28,7 +29,17 @@ api.interceptors.request.use(
 
 // Response Interceptor
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Detect if SPA HTML was returned instead of JSON for API call
+    if (typeof response.data === 'string' && response.data.trim().startsWith('<!DOCTYPE')) {
+      return Promise.reject({
+        response: {
+          data: { detail: 'API endpoint misconfigured or server starting up. Please try again.' }
+        }
+      });
+    }
+    return response;
+  },
   (error) => {
     const message = error.response?.data?.detail || 'An unexpected error occurred';
     if (error.response?.status === 401 && !window.location.pathname.includes('/login')) {

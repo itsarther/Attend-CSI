@@ -21,9 +21,19 @@ export default function QRCodeModal({ session, event, onClose, onRefreshSession 
   const [secondsRemaining, setSecondsRemaining] = useState(session?.remaining_seconds || 20);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const qrUrl = session?.qr_url || `${window.location.origin}/attendance/session/${session?.session_uuid}`;
+  const getQrUrl = () => {
+    if (!session?.session_uuid) return window.location.origin;
+    if (session?.qr_url && session.qr_url.includes('/attendance/session/')) {
+      if (!session.qr_url.includes('localhost:8000') && !session.qr_url.includes('127.0.0.1:8000')) {
+        return session.qr_url;
+      }
+    }
+    return `${window.location.origin}/attendance/session/${session.session_uuid}`;
+  };
 
-  // Poll for live session & rotating token update every second
+  const qrUrl = getQrUrl();
+
+  // Poll for live session & rotating token update every 3 seconds
   useEffect(() => {
     if (!session?.session_uuid) return;
 
@@ -37,7 +47,7 @@ export default function QRCodeModal({ session, event, onClose, onRefreshSession 
       } catch (err) {
         console.error("Failed to sync session token:", err);
       }
-    }, 1000);
+    }, 3000);
 
     return () => clearInterval(interval);
   }, [session?.session_uuid]);

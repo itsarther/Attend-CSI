@@ -22,13 +22,32 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = Field(default="sqlite:///./attend_csi.db")
     
-    # CORS
-    BACKEND_CORS_ORIGINS: List[str] = [
+    # Frontend URL & CORS
+    FRONTEND_URL: str = Field(default="")
+    BACKEND_CORS_ORIGINS: Union[List[str], str] = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-        "http://localhost:3000",
-        "*"
+        "http://localhost:3000"
     ]
+
+    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
+    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
+        if isinstance(v, str) and not v.startswith("["):
+            origins = [i.strip() for i in v.split(",") if i.strip()]
+        elif isinstance(v, str) and v.startswith("["):
+            import json
+            try:
+                origins = json.loads(v)
+            except Exception:
+                origins = []
+        elif isinstance(v, list):
+            origins = v
+        else:
+            origins = []
+
+        # Remove raw '*' if present to avoid CORS credential rejection in browsers
+        origins = [o for o in origins if o != "*"]
+        return origins
 
     class Config:
         case_sensitive = True
@@ -37,3 +56,4 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+

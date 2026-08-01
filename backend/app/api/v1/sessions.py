@@ -9,10 +9,26 @@ from app.models.session import AttendanceSession
 from app.models.user import User
 from app.schemas.session import SessionStartRequest, SessionResponse, TokenCheckRequest, TokenCheckResponse
 from app.api.v1.auth import get_current_user
+from app.core.config import settings
 from app.core.security import generate_presence_token, verify_presence_token
 from app.services.audit_service import log_action
 
 router = APIRouter(prefix="/sessions", tags=["Attendance Sessions"])
+
+
+def _construct_qr_url(request: Request, session_uuid: str) -> str:
+    if settings.FRONTEND_URL and settings.FRONTEND_URL.strip():
+        base_url = settings.FRONTEND_URL.rstrip("/")
+        return f"{base_url}/attendance/session/{session_uuid}"
+
+    origin = request.headers.get("origin") or request.headers.get("referer")
+    if origin:
+        base_url = origin.rstrip("/").split("/attendance")[0].split("/api")[0]
+        return f"{base_url}/attendance/session/{session_uuid}"
+
+    scheme = request.headers.get("x-forwarded-proto", "http")
+    host = request.headers.get("host", "localhost:5173")
+    return f"{scheme}://{host}/attendance/session/{session_uuid}"
 
 
 @router.post("/start", response_model=SessionResponse)
@@ -59,10 +75,7 @@ def start_attendance(
     db.refresh(new_session)
 
     token, remaining = generate_presence_token(session_uuid)
-    
-    # Host IP / URL construction
-    host = request.headers.get("host") or "localhost:5173"
-    qr_url = f"http://{host.split(':')[0]}:5173/attendance/session/{session_uuid}"
+    qr_url = _construct_qr_url(request, session_uuid)
 
     log_action(
         db,
@@ -188,8 +201,7 @@ def get_active_session_by_event(event_id: int, request: Request, db: Session = D
         return {"has_active_session": False, "session": None}
 
     token, remaining = generate_presence_token(sess.session_uuid)
-    host = request.headers.get("host") or "localhost:5173"
-    qr_url = f"http://{host.split(':')[0]}:5173/attendance/session/{sess.session_uuid}"
+    qr_url = _construct_qr_url(request, sess.session_uuid)
 
     return {
         "has_active_session": True,
@@ -226,9 +238,6 @@ def get_public_session_info(session_uuid: str, db: Session = Depends(get_db)):
         }
 
     if now > sess.expiry_time:
-        sess.is_active = False
-        sess.status = "EXPIRED"
-        db.commit()
         return {
             "is_active": False,
             "status": "EXPIRED",
