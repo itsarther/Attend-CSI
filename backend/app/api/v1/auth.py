@@ -33,10 +33,13 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
     return user
 
 
+from sqlalchemy import func
+
 @router.post("/login", response_model=TokenResponse)
 def login(login_data: LoginRequest, request: Request, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.username == login_data.username.strip()).first()
-    if not user or not verify_password(login_data.password, user.password_hash):
+    clean_username = login_data.username.strip().lower()
+    user = db.query(User).filter(func.lower(User.username) == clean_username).first()
+    if not user or not verify_password(login_data.password.strip(), user.password_hash):
         log_action(db, action="LOGIN_FAILED", performed_by=login_data.username, ip_address=request.client.host, details="Invalid username or password")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

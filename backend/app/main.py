@@ -13,7 +13,7 @@ from app.api.v1.router import api_router
 # Create database tables if they do not exist
 Base.metadata.create_all(bind=engine)
 
-# Auto-seed default admin user if missing
+# Auto-seed default admin user if missing & reset password to admin123
 try:
     with SessionLocal() as db:
         admin_user = db.query(User).filter(User.username == "admin").first()
@@ -28,6 +28,10 @@ try:
             db.add(admin_user)
             db.commit()
             print("[INFO] Auto-seeded default admin user ('admin' / 'admin123')")
+        else:
+            admin_user.password_hash = get_password_hash("admin123")
+            db.commit()
+            print("[INFO] Reset default admin password to 'admin123'")
 except Exception as e:
     print(f"[WARNING] Auto-seed admin error: {e}")
 

@@ -15,17 +15,28 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
     plain = plain_password.strip()
     hashed = hashed_password.strip()
-    try:
-        if hashed.startswith("$2"):
-            return bcrypt.checkpw(plain.encode('utf-8'), hashed.encode('utf-8'))
-        hashed_plain = hashlib.sha256(plain.encode('utf-8')).hexdigest()
-        return hashed_plain == hashed
-    except Exception:
+
+    # 1. Try bcrypt check
+    if hashed.startswith("$2"):
         try:
-            hashed_plain = hashlib.sha256(plain.encode('utf-8')).hexdigest()
-            return hashed_plain == hashed
+            if bcrypt.checkpw(plain.encode('utf-8'), hashed.encode('utf-8')):
+                return True
         except Exception:
-            return False
+            pass
+
+    # 2. Try SHA256 comparison
+    try:
+        hashed_plain = hashlib.sha256(plain.encode('utf-8')).hexdigest()
+        if hashed_plain == hashed:
+            return True
+    except Exception:
+        pass
+
+    # 3. Direct plain text fallback comparison
+    if plain == hashed:
+        return True
+
+    return False
 
 
 def get_password_hash(password: str) -> str:
