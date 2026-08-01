@@ -5,8 +5,8 @@ import { ShieldCheck, Lock, User, KeyRound, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin123');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const { login } = useAuth();
@@ -54,18 +54,6 @@ export default function LoginPage() {
             <p className="text-xs text-slate-400 mt-1 font-medium">
               CSI-CATT Committee Event Portal
             </p>
-          </div>
-        </div>
-
-        {/* Credentials Notice Box */}
-        <div className="mb-6 p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300 space-y-1">
-          <p className="font-semibold text-brand-400 flex items-center gap-1.5">
-            <KeyRound className="w-3.5 h-3.5" />
-            <span>Default Administrator Credentials</span>
-          </p>
-          <div className="flex items-center justify-between text-slate-400 font-mono text-[11px] pt-1 border-t border-slate-800">
-            <span>Username: <strong className="text-slate-200">admin</strong></span>
-            <span>Password: <strong className="text-slate-200">admin123</strong></span>
           </div>
         </div>
 
