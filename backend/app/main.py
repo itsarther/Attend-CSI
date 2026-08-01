@@ -10,28 +10,32 @@ from app.models.user import User
 from app.core.security import get_password_hash
 from app.api.v1.router import api_router
 
+from sqlalchemy import func
+
 # Create database tables if they do not exist
 Base.metadata.create_all(bind=engine)
 
-# Auto-seed default admin user if missing & reset password to admin123
+# Auto-seed default admin user if missing & synchronize password hash
 try:
     with SessionLocal() as db:
-        admin_user = db.query(User).filter(User.username == "admin").first()
+        admin_uname = settings.DEFAULT_ADMIN_USERNAME.strip()
+        admin_pass = settings.DEFAULT_ADMIN_PASSWORD.strip()
+        admin_user = db.query(User).filter(func.lower(User.username) == admin_uname.lower()).first()
         if not admin_user:
             admin_user = User(
-                username="admin",
-                password_hash=get_password_hash("admin123"),
+                username=admin_uname,
+                password_hash=get_password_hash(admin_pass),
                 full_name="CSI Committee Admin",
                 email="admin@csi-catt.org",
                 role="ADMIN"
             )
             db.add(admin_user)
             db.commit()
-            print("[INFO] Auto-seeded default admin user ('admin' / 'admin123')")
+            print(f"[INFO] Auto-seeded default admin user ('{admin_uname}' / '{admin_pass}')")
         else:
-            admin_user.password_hash = get_password_hash("admin123")
+            admin_user.password_hash = get_password_hash(admin_pass)
             db.commit()
-            print("[INFO] Reset default admin password to 'admin123'")
+            print(f"[INFO] Synchronized default admin password for '{admin_uname}'")
 except Exception as e:
     print(f"[WARNING] Auto-seed admin error: {e}")
 

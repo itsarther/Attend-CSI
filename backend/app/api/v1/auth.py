@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from app.database.session import get_db
 from app.models.user import User
 from app.schemas.auth import LoginRequest, TokenResponse, UserResponse
-from app.core.security import verify_password, create_access_token, decode_access_token
+from app.core.config import settings
+from app.core.security import verify_password, get_password_hash, create_access_token, decode_access_token
 from app.services.audit_service import log_action
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -33,20 +35,21 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
     return user
 
 
-from sqlalchemy import func
-
 @router.post("/login", response_model=TokenResponse)
 def login(login_data: LoginRequest, request: Request, db: Session = Depends(get_db)):
     clean_username = login_data.username.strip().lower()
     clean_password = login_data.password.strip()
 
+    target_admin_username = settings.DEFAULT_ADMIN_USERNAME.strip().lower()
+    target_admin_password = settings.DEFAULT_ADMIN_PASSWORD.strip()
+
     user = db.query(User).filter(func.lower(User.username) == clean_username).first()
 
-    # Guaranteed auto-creation of default admin if database is unseeded
-    if not user and clean_username == "admin":
+    # Dynamic auto-creation of default admin if database is unseeded at runtime
+    if not user and clean_username == target_admin_username:
         user = User(
-            username="admin",
-            password_hash=get_password_hash("admin123"),
+            username=settings.DEFAULT_ADMIN_USERNAME.strip(),
+            password_hash=get_password_hash(target_admin_password),
             full_name="CSI Committee Admin",
             email="admin@csi-catt.org",
             role="ADMIN"
@@ -57,7 +60,11 @@ def login(login_data: LoginRequest, request: Request, db: Session = Depends(get_
 
     is_valid = False
     if user:
-        if clean_username == "admin" and clean_password == "admin123":
+        if clean_username == target_admin_username and clean_password == target_admin_password:
+            # Synchronize DB password hash if mismatched
+            if not verify_password(clean_password, user.password_hash):
+                user.password_hash = get_password_hash(clean_password)
+                db.commit()
             is_valid = True
         else:
             is_valid = verify_password(clean_password, user.password_hash)

@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     PRESENCE_SECRET_SEED: str = Field(default="csi_catt_venue_presence_secret_2026")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     ALGORITHM: str = "HS256"
+
+    # Default Administrator Credentials
+    DEFAULT_ADMIN_USERNAME: str = Field(default="admin")
+    DEFAULT_ADMIN_PASSWORD: str = Field(default="admin123")
     
     # Token Rotation Settings
     TOKEN_ROTATION_INTERVAL_SECONDS: int = 20
