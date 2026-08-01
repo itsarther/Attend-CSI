@@ -5,11 +5,31 @@ from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.database.base import Base
-from app.database.session import engine
+from app.database.session import engine, SessionLocal
+from app.models.user import User
+from app.core.security import get_password_hash
 from app.api.v1.router import api_router
 
 # Create database tables if they do not exist
 Base.metadata.create_all(bind=engine)
+
+# Auto-seed default admin user if missing
+try:
+    with SessionLocal() as db:
+        admin_user = db.query(User).filter(User.username == "admin").first()
+        if not admin_user:
+            admin_user = User(
+                username="admin",
+                password_hash=get_password_hash("admin123"),
+                full_name="CSI Committee Admin",
+                email="admin@csi-catt.org",
+                role="ADMIN"
+            )
+            db.add(admin_user)
+            db.commit()
+            print("[INFO] Auto-seeded default admin user ('admin' / 'admin123')")
+except Exception as e:
+    print(f"[WARNING] Auto-seed admin error: {e}")
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

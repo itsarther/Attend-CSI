@@ -11,22 +11,29 @@ import bcrypt
 
 # Password Context Helper using direct bcrypt
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+    if not plain_password or not hashed_password:
+        return False
+    plain = plain_password.strip()
+    hashed = hashed_password.strip()
     try:
-        if hashed_password.startswith("$2b$") or hashed_password.startswith("$2a$"):
-            return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
-        hashed_plain = hashlib.sha256(plain_password.encode('utf-8')).hexdigest()
-        return hashed_plain == hashed_password
+        if hashed.startswith("$2"):
+            return bcrypt.checkpw(plain.encode('utf-8'), hashed.encode('utf-8'))
+        hashed_plain = hashlib.sha256(plain.encode('utf-8')).hexdigest()
+        return hashed_plain == hashed
     except Exception:
-        hashed_plain = hashlib.sha256(plain_password.encode('utf-8')).hexdigest()
-        return hashed_plain == hashed_password
+        try:
+            hashed_plain = hashlib.sha256(plain.encode('utf-8')).hexdigest()
+            return hashed_plain == hashed
+        except Exception:
+            return False
 
 
 def get_password_hash(password: str) -> str:
     try:
         salt = bcrypt.gensalt()
-        return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+        return bcrypt.hashpw(password.strip().encode('utf-8'), salt).decode('utf-8')
     except Exception:
-        return hashlib.sha256(password.encode('utf-8')).hexdigest()
+        return hashlib.sha256(password.strip().encode('utf-8')).hexdigest()
 
 
 
