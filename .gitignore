@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/venv/
+backend/env/
+venv/
+env/
+
+# Build outputs
+dist/
+frontend/dist/
+build/
+
+# Cache
+.vite/
+frontend/node_modules/.vite/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Databases & Local state
+*.db
+*.sqlite
+*.sqlite3
+backend/attend_csi.db
+
+# Environment variables
+.env
+.env.local
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
