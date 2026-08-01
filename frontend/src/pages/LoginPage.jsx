@@ -25,7 +25,9 @@ export default function LoginPage() {
       toast.success('Welcome back, CSI-CATT Admin!');
       navigate('/');
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Invalid username or password');
+      const errMsg = err.response?.data?.detail || err.message || 'Authentication request failed. Please check network/API connection.';
+      console.error("Login Error:", err);
+      toast.error(errMsg);
     } finally {
       setSubmitting(false);
     }
