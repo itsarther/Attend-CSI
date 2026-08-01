@@ -49,19 +49,43 @@ export default function AttendanceTable({ records = [], eventId, onRefresh, onOp
     }
   };
 
-  const handleExport = (format) => {
+  const handleExport = async (format) => {
     if (!eventId) return;
-    const token = localStorage.getItem('csi_auth_token');
-    const url = `/api/v1/attendance/export/${eventId}?format=${format}`;
-    
-    // Trigger download
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `attendance_${eventId}.${format}`);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    toast.success(`Exporting attendance roster as ${format.toUpperCase()}...`);
+    const toastId = toast.loading(`Generating ${format.toUpperCase()} attendance roster...`);
+    try {
+      const response = await api.get(`/attendance/export/${eventId}?format=${format}`, {
+        responseType: 'blob'
+      });
+
+      const mimeTypes = {
+        excel: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        csv: 'text/csv',
+        pdf: 'application/pdf'
+      };
+
+      const extensions = {
+        excel: 'xlsx',
+        csv: 'csv',
+        pdf: 'pdf'
+      };
+
+      const blob = new Blob([response.data], { type: mimeTypes[format] || 'application/octet-stream' });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.setAttribute('download', `attendance_event_${eventId}.${extensions[format] || format}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+
+      toast.success(`Downloaded ${format.toUpperCase()} attendance roster!`, { id: toastId });
+    } catch (err) {
+      console.error("Export error:", err);
+      const errMsg = err.response?.data?.detail || 'Failed to export attendance file';
+      toast.error(errMsg, { id: toastId });
+    }
   };
 
   return (
