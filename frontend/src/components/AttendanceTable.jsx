@@ -57,6 +57,13 @@ export default function AttendanceTable({ records = [], eventId, onRefresh, onOp
         responseType: 'blob'
       });
 
+      // Check if response is HTML fallback from SPA rewrite on frontend domain
+      const textSample = await response.data.text();
+      if (textSample.trim().toLowerCase().startsWith('<!doctype html') || textSample.trim().toLowerCase().startsWith('<html')) {
+        toast.error('Export failed: Request hit frontend host instead of Backend API. Set VITE_API_BASE_URL in Render environment settings.', { id: toastId, duration: 6000 });
+        return;
+      }
+
       const mimeTypes = {
         excel: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         csv: 'text/csv',
@@ -83,7 +90,7 @@ export default function AttendanceTable({ records = [], eventId, onRefresh, onOp
       toast.success(`Downloaded ${format.toUpperCase()} attendance roster!`, { id: toastId });
     } catch (err) {
       console.error("Export error:", err);
-      const errMsg = err.response?.data?.detail || 'Failed to export attendance file';
+      const errMsg = err.response?.data?.detail || err.message || 'Failed to export attendance file';
       toast.error(errMsg, { id: toastId });
     }
   };
